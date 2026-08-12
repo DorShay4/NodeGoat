@@ -12,12 +12,21 @@ function BenefitsDAO(db) {
 
     const usersCol = db.collection("users");
 
-    this.getAllNonAdminUsers = callback => {
+    this.getAllNonAdminUsers = (requester, callback) => {
+        if (typeof requester === "function") {
+            callback = requester;
+            return callback(new Error("admin authorization required"), null);
+        }
+
+        if (!requester || requester.isAdmin !== true) {
+            return callback(new Error("admin authorization required"), null);
+        }
+
         usersCol.find({
             "isAdmin": {
                 $ne: true
             }
-        }).toArray((err, users) => callback(null, users));
+        }).toArray((err, users) => callback(err, users));
     };
 
     this.updateBenefits = (userId, startDate, callback) => {
