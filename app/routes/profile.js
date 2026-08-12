@@ -9,6 +9,7 @@ function ProfileHandler(db) {
     "use strict";
 
     const profile = new ProfileDAO(db);
+    const encodeForHTML = (value) => ESAPI.encoder().encodeForHTML(String(value ?? ""));
 
     this.displayProfile = (req, res, next) => {
         const {
@@ -61,16 +62,15 @@ function ProfileHandler(db) {
         const testComplyWithRequirements = regexPattern.test(bankRouting);
         // if the regex test fails we do not allow saving
         if (testComplyWithRequirements !== true) {
-            const firstNameSafeString = firstName;
             return res.render("profile", {
                 updateError: "Bank Routing number does not comply with requirements for format specified",
-                firstNameSafeString,
-                lastName,
-                ssn,
-                dob,
-                address,
-                bankAcc,
-                bankRouting,
+                firstNameSafeString: "",
+                lastName: encodeForHTML(lastName),
+                ssn: encodeForHTML(ssn),
+                dob: encodeForHTML(dob),
+                address: encodeForHTML(address),
+                bankAcc: encodeForHTML(bankAcc),
+                bankRouting: encodeForHTML(bankRouting),
                 environmentalScripts
             });
         }
