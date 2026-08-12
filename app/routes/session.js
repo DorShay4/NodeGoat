@@ -10,6 +10,13 @@ function SessionHandler(db) {
 
     const userDAO = new UserDAO(db);
     const allocationsDAO = new AllocationsDAO(db);
+    const escapeHtml = (value) => (typeof value === "string" ? value : "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    }[char]));
 
     const prepareUserData = (user, next) => {
         // Generate random allocations
@@ -55,6 +62,7 @@ function SessionHandler(db) {
             userName,
             password
         } = req.body;
+        const safeUserName = escapeHtml(userName);
         userDAO.validateLogin(userName, password, (err, user) => {
             const errorMessage = "Invalid username and/or password";
             const invalidUserNameErrorMessage = "Invalid username";
@@ -80,7 +88,7 @@ function SessionHandler(db) {
                     //     userName.replace(/(\r\n|\r|\n)/g, '_'));
 
                     return res.render("login", {
-                        userName: userName,
+                        userName: safeUserName,
                         password: "",
                         loginError: invalidUserNameErrorMessage,
                         //Fix for A2-2 Broken Auth - Uses identical error for both username, password error
@@ -89,7 +97,7 @@ function SessionHandler(db) {
                     });
                 } else if (err.invalidPassword) {
                     return res.render("login", {
-                        userName: userName,
+                        userName: safeUserName,
                         password: "",
                         loginError: invalidPasswordErrorMessage,
                         //Fix for A2-2 Broken Auth - Uses identical error for both username, password error
