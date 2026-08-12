@@ -15,6 +15,12 @@ const marked = require("marked");
 const app = express(); // Web framework to handle routing requests
 const routes = require("./app/routes");
 const { port, db, cookieSecret } = require("./config/config"); // Application config properties
+
+const sessionCookieSettings = {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: true
+};
 /*
 // Fix for A6-Sensitive Data Exposure
 // Load keys for establishing secure HTTPS connection
@@ -74,6 +80,8 @@ MongoClient.connect(db, (err, db) => {
         extended: false
     }));
 
+    app.set("trust proxy", 1);
+
     // Enable session management using express middleware
     app.use(session({
         // genid: (req) => {
@@ -82,7 +90,9 @@ MongoClient.connect(db, (err, db) => {
         secret: cookieSecret,
         // Both mandatory in Express v4
         saveUninitialized: true,
-        resave: true
+        resave: true,
+        proxy: true,
+        cookie: sessionCookieSettings
         /*
         // Fix for A5 - Security MisConfig
         // Use generic cookie name
