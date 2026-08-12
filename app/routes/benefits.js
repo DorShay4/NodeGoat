@@ -9,6 +9,16 @@ function BenefitsHandler(db) {
     "use strict";
 
     const benefitsDAO = new BenefitsDAO(db);
+    const escapeHtml = (value) => String(value === undefined || value === null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    const escapeUsers = (users) => (users || []).map(user => Object.assign({}, user, {
+        firstName: escapeHtml(user.firstName),
+        lastName: escapeHtml(user.lastName)
+    }));
 
     this.displayBenefits = (req, res, next) => {
 
@@ -17,7 +27,7 @@ function BenefitsHandler(db) {
             if (error) return next(error);
 
             return res.render("benefits", {
-                users,
+                users: escapeUsers(users),
                 user: {
                     isAdmin: true
                 },
@@ -40,7 +50,7 @@ function BenefitsHandler(db) {
                 if (error) return next(error);
 
                 const data = {
-                    users,
+                    users: escapeUsers(users),
                     user: {
                         isAdmin: true
                     },
