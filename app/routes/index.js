@@ -60,7 +60,13 @@ const index = (app, db) => {
      */
 
     // Allocations Page
-    app.get("/allocations/:userId", isLoggedIn, allocationsHandler.displayAllocations);
+    app.get("/allocations/:userId", isLoggedIn, (req, res, next) => {
+        if (String(req.session.userId) !== String(req.params.userId)) {
+            return res.status(403).send("Forbidden");
+        }
+
+        return allocationsHandler.displayAllocations(req, res, next);
+    });
 
     // Memos Page
     app.get("/memos", isLoggedIn, memosHandler.displayMemos);
