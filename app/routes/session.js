@@ -186,7 +186,35 @@ function SessionHandler(db) {
         return true;
     };
 
+    const isSameOriginRequest = (req) => {
+        const host = req.get("host");
+
+        if (!host) {
+            return false;
+        }
+
+        const expectedOrigin = `${req.protocol}://${host}`;
+        const origin = req.get("origin");
+        const referer = req.get("referer");
+
+        if (origin) {
+            return origin === expectedOrigin;
+        }
+
+        if (referer) {
+            return referer === expectedOrigin || referer.startsWith(`${expectedOrigin}/`);
+        }
+
+        return false;
+    };
+
     this.handleSignup = (req, res, next) => {
+
+        if (!isSameOriginRequest(req)) {
+            return res.status(403).render("error-template", {
+                error: "Invalid request origin"
+            });
+        }
 
         const {
             email,
