@@ -11,12 +11,6 @@ function SessionHandler(db) {
 
     const userDAO = new UserDAO(db);
     const allocationsDAO = new AllocationsDAO(db);
-    const escapeHtml = (value = "") => String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
 
     const prepareUserData = (user, next) => {
         // Generate random allocations
@@ -31,8 +25,6 @@ function SessionHandler(db) {
 
     const encodeDashboardNameFields = (user) => ({
         ...user,
-        firstName: ESAPI.encoder().encodeForHTML(String(user.firstName || "")),
-        lastName: ESAPI.encoder().encodeForHTML(String(user.lastName || ""))
     });
 
     this.isAdminUserMiddleware = (req, res, next) => {
@@ -246,8 +238,8 @@ function SessionHandler(db) {
 
         // set these up in case we have an error case
         const errors = {
-            "userName": escapeHtml(userName),
-            "email": escapeHtml(email)
+            "userName": userName,
+            "email": email
         };
 
         if (validateSignup(userName, firstName, lastName, password, verify, email, errors)) {

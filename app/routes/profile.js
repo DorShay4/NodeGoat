@@ -1,5 +1,4 @@
 const ProfileDAO = require("../data/profile-dao").ProfileDAO;
-const ESAPI = require("node-esapi");
 const {
     environmentalScripts
 } = require("../../config/config");
@@ -9,19 +8,10 @@ function ProfileHandler(db) {
     "use strict";
 
     const profile = new ProfileDAO(db);
-    const encodeForHTML = (value) => ESAPI.encoder().encodeForHTML(String(value || ""));
-    const encodeProfileViewModel = (profileDoc) => ({
-        ...profileDoc,
-        firstName: encodeForHTML(profileDoc.firstName),
-        firstNameSafeString: encodeForHTML(profileDoc.firstName),
-        lastName: encodeForHTML(profileDoc.lastName),
-        ssn: encodeForHTML(profileDoc.ssn),
-        dob: encodeForHTML(profileDoc.dob),
-        address: encodeForHTML(profileDoc.address),
-        bankAcc: encodeForHTML(profileDoc.bankAcc),
-        bankRouting: encodeForHTML(profileDoc.bankRouting),
-        website: encodeForHTML(profileDoc.website)
-    });
+    // HTML escaping is handled by the template engine (swig autoescape).
+    // The profile search link is a URL context, which autoescape does not cover.
+    const profileSearchUrl = (firstName) =>
+        `https://www.google.com/search?q=${encodeURIComponent(String(firstName || ""))}`;
 
     this.displayProfile = (req, res, next) => {
         const {
@@ -35,7 +25,9 @@ function ProfileHandler(db) {
             doc.userId = userId;
 
             return res.render("profile", {
-                ...encodeProfileViewModel(doc),
+                ...doc,
+                firstNameSafeString: doc.firstName,
+                firstNameSearchUrl: profileSearchUrl(doc.firstName),
                 environmentalScripts
             });
         });
@@ -66,15 +58,14 @@ function ProfileHandler(db) {
         // if the regex test fails we do not allow saving
         if (testComplyWithRequirements !== true) {
             return res.render("profile", {
-                ...encodeProfileViewModel({
-                    firstName,
-                    lastName,
-                    ssn,
-                    dob,
-                    address,
-                    bankAcc,
-                    bankRouting
-                }),
+                firstNameSafeString: firstName,
+                firstNameSearchUrl: profileSearchUrl(firstName),
+                lastName,
+                ssn,
+                dob,
+                address,
+                bankAcc,
+                bankRouting,
                 updateError: "Bank Routing number does not comply with requirements for format specified",
                 environmentalScripts
             });
@@ -103,7 +94,9 @@ function ProfileHandler(db) {
                 user.userId = userId;
 
                 return res.render("profile", {
-                    ...encodeProfileViewModel(user),
+                    ...user,
+                    firstNameSafeString: user.firstName,
+                    firstNameSearchUrl: profileSearchUrl(user.firstName),
                     environmentalScripts
                 });
             }
