@@ -20,9 +20,13 @@ function BenefitsDAO(db) {
         }).toArray((err, users) => callback(null, users));
     };
 
-    this.updateBenefits = (userId, startDate, callback) => {
+    this.updateBenefits = (userId, startDate, callback, actor) => {
+        if (!actor || actor.isAdmin !== true) {
+            return callback(new Error("admin authorization required"), null);
+        }
+
         usersCol.update({
-                _id: parseInt(userId)
+                _id: parseInt(userId, 10)
             }, {
                 $set: {
                     benefitStartDate: startDate
