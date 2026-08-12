@@ -2,6 +2,9 @@ const {
     BenefitsDAO
 } = require("../data/benefits-dao");
 const {
+    UserDAO
+} = require("../data/user-dao");
+const {
     environmentalScripts
 } = require("../../config/config");
 
@@ -9,29 +12,34 @@ function BenefitsHandler(db) {
     "use strict";
 
     const benefitsDAO = new BenefitsDAO(db);
-    const escapeHtml = (value) => String(value === undefined || value === null ? "" : value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-    const escapeUsers = (users) => (users || []).map(user => Object.assign({}, user, {
-        firstName: escapeHtml(user.firstName),
-        lastName: escapeHtml(user.lastName)
-    }));
+    const userDAO = new UserDAO(db);
+
+    // Resolve the acting user from the session and refuse non-admins.
+    // This backs up the isAdmin route middleware, so the handler is safe even
+    // if it is ever mounted without it.
+    const getAuthorizedAdmin = (req, res, next, callback) => {
+        return userDAO.getUserById(req.session.userId, (error, user) => {
+            if (error) return next(error);
+            if (!user || !user.isAdmin) {
+                return res.redirect("/login");
+            }
+
+            return callback(user);
+        });
+    };
 
     this.displayBenefits = (req, res, next) => {
 
-        benefitsDAO.getAllNonAdminUsers((error, users) => {
+        return getAuthorizedAdmin(req, res, next, admin => {
+            benefitsDAO.getAllNonAdminUsers(admin, (error, users) => {
 
-            if (error) return next(error);
+                if (error) return next(error);
 
-            return res.render("benefits", {
-                users: escapeUsers(users),
-                user: {
-                    isAdmin: true
-                },
-                environmentalScripts
+                return res.render("benefits", {
+                    users,
+                    user: admin,
+                    environmentalScripts
+                });
             });
         });
     };
@@ -42,24 +50,31 @@ function BenefitsHandler(db) {
             benefitStartDate
         } = req.body;
 
-        benefitsDAO.updateBenefits(userId, benefitStartDate, (error) => {
+        return getAuthorizedAdmin(req, res, next, admin => {
+            // updateBenefits validates benefitStartDate and throws on bad input.
+            // We are inside an async callback, so Express cannot catch that
+            // throw automatically; forward it to the error handler explicitly.
+            try {
+                benefitsDAO.updateBenefits(userId, benefitStartDate, (error) => {
 
-            if (error) return next(error);
+                    if (error) return next(error);
 
-            benefitsDAO.getAllNonAdminUsers((error, users) => {
-                if (error) return next(error);
+                    benefitsDAO.getAllNonAdminUsers(admin, (error, users) => {
+                        if (error) return next(error);
 
-                const data = {
-                    users: escapeUsers(users),
-                    user: {
-                        isAdmin: true
-                    },
-                    updateSuccess: true,
-                    environmentalScripts
-                };
+                        const data = {
+                            users,
+                            user: admin,
+                            updateSuccess: true,
+                            environmentalScripts
+                        };
 
-                return res.render("benefits", data);
-            });
+                        return res.render("benefits", data);
+                    });
+                }, admin);
+            } catch (error) {
+                return next(error);
+            }
         });
     };
 }

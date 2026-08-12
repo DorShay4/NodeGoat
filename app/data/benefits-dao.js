@@ -27,15 +27,30 @@ function BenefitsDAO(db) {
         return trimmedStartDate;
     };
 
-    this.getAllNonAdminUsers = callback => {
+    const isAdminActor = actor => Boolean(actor) && actor.isAdmin === true;
+
+    this.getAllNonAdminUsers = (requester, callback) => {
+        if (typeof requester === "function") {
+            callback = requester;
+            return callback(new Error("admin authorization required"), null);
+        }
+
+        if (!isAdminActor(requester)) {
+            return callback(new Error("admin authorization required"), null);
+        }
+
         usersCol.find({
             "isAdmin": {
                 $ne: true
             }
-        }).toArray((err, users) => callback(null, users));
+        }).toArray((err, users) => callback(err, users));
     };
 
-    this.updateBenefits = (userId, startDate, callback) => {
+    this.updateBenefits = (userId, startDate, callback, actor) => {
+        if (!isAdminActor(actor)) {
+            return callback(new Error("admin authorization required"), null);
+        }
+
         const normalizedStartDate = normalizeBenefitStartDate(startDate);
 
         usersCol.update({
