@@ -1,5 +1,6 @@
 const UserDAO = require("../data/user-dao").UserDAO;
 const AllocationsDAO = require("../data/allocations-dao").AllocationsDAO;
+const ESAPI = require("node-esapi");
 const {
     environmentalScripts
 } = require("../../config/config");
@@ -27,6 +28,12 @@ function SessionHandler(db) {
             if (err) return next(err);
         });
     };
+
+    const encodeDashboardNameFields = (user) => ({
+        ...user,
+        firstName: ESAPI.encoder().encodeForHTML(String(user.firstName || "")),
+        lastName: ESAPI.encoder().encodeForHTML(String(user.lastName || ""))
+    });
 
     this.isAdminUserMiddleware = (req, res, next) => {
         if (req.session.userId) {
@@ -249,7 +256,7 @@ function SessionHandler(db) {
                         user.userId = user._id;
 
                         return res.render("dashboard", {
-                            ...user,
+                            ...encodeDashboardNameFields(user),
                             environmentalScripts
                         });
                     });
@@ -279,7 +286,7 @@ function SessionHandler(db) {
             if (err) return next(err);
             doc.userId = userId;
             return res.render("dashboard", {
-                ...doc,
+                ...encodeDashboardNameFields(doc),
                 environmentalScripts
             });
         });
