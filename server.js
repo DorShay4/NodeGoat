@@ -126,7 +126,15 @@ MongoClient.connect(db, (err, db) => {
     marked.setOptions({
         sanitize: true
     });
-    app.locals.marked = marked;
+    app.locals.marked = (input) => {
+        if (typeof input !== "string") {
+            return "";
+        }
+        if (input.length > 4096) {
+            return "[memo omitted: markdown input exceeds render limit]";
+        }
+        return marked(input);
+    };
 
     // Application routes
     routes(app, db);
