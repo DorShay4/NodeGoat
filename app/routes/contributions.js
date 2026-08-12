@@ -1,4 +1,5 @@
 const ContributionsDAO = require("../data/contributions-dao").ContributionsDAO;
+const ESAPI = require("node-esapi");
 const {
     environmentalScripts
 } = require("../../config/config");
@@ -20,6 +21,8 @@ function ContributionsHandler(db) {
             contrib.userId = userId; //set for nav menu items
             return res.render("contributions", {
                 ...contrib,
+                firstName: typeof contrib.firstName === "string" ? ESAPI.encoder().encodeForHTML(contrib.firstName) : contrib.firstName,
+                lastName: typeof contrib.lastName === "string" ? ESAPI.encoder().encodeForHTML(contrib.lastName) : contrib.lastName,
                 environmentalScripts
             });
         });
