@@ -3,6 +3,33 @@ const {
     environmentalScripts
 } = require("../../config/config");
 
+const isSameOriginRequest = req => {
+    const host = req.get("host");
+
+    if (!host) {
+        return false;
+    }
+
+    const expectedOrigin = `${req.protocol}://${host}`;
+    const origin = req.get("origin");
+
+    if (origin) {
+        return origin === expectedOrigin;
+    }
+
+    const referer = req.get("referer");
+
+    if (!referer) {
+        return false;
+    }
+
+    try {
+        return new URL(referer).origin === expectedOrigin;
+    } catch (error) {
+        return false;
+    }
+};
+
 /* The ContributionsHandler must be constructed with a connected db */
 function ContributionsHandler(db) {
     "use strict";
@@ -42,6 +69,14 @@ function ContributionsHandler(db) {
         const {
             userId
         } = req.session;
+
+        if (!isSameOriginRequest(req)) {
+            return res.status(403).render("contributions", {
+                updateError: "Invalid request source",
+                userId,
+                environmentalScripts
+            });
+        }
 
         //validate contributions
         const validations = [isNaN(preTax), isNaN(afterTax), isNaN(roth), preTax < 0, afterTax < 0, roth < 0];
