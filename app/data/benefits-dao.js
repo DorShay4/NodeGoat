@@ -12,6 +12,21 @@ function BenefitsDAO(db) {
 
     const usersCol = db.collection("users");
 
+    const normalizeBenefitStartDate = startDate => {
+        const trimmedStartDate = String(startDate || "").trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmedStartDate)) {
+            throw new Error("Invalid benefit start date");
+        }
+
+        const parsedDate = new Date(`${trimmedStartDate}T00:00:00.000Z`);
+        if (Number.isNaN(parsedDate.getTime()) ||
+            parsedDate.toISOString().slice(0, 10) !== trimmedStartDate) {
+            throw new Error("Invalid benefit start date");
+        }
+
+        return trimmedStartDate;
+    };
+
     this.getAllNonAdminUsers = callback => {
         usersCol.find({
             "isAdmin": {
@@ -21,11 +36,13 @@ function BenefitsDAO(db) {
     };
 
     this.updateBenefits = (userId, startDate, callback) => {
+        const normalizedStartDate = normalizeBenefitStartDate(startDate);
+
         usersCol.update({
-                _id: parseInt(userId)
+                _id: parseInt(userId, 10)
             }, {
                 $set: {
-                    benefitStartDate: startDate
+                    benefitStartDate: normalizedStartDate
                 }
             },
             (err, result) => {
