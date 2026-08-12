@@ -16,13 +16,6 @@ Icon?
 # Idea stuff
 .idea/**
 
-# Zap output
-report*.html
-
-# e2e
-test/e2e/screenshots/
-test/e2e/videos/
-
 # ignore sensitive files
 .env.local
 .env
