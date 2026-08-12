@@ -10,6 +10,12 @@ function SessionHandler(db) {
 
     const userDAO = new UserDAO(db);
     const allocationsDAO = new AllocationsDAO(db);
+    const escapeHtml = (value = "") => String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
 
     const prepareUserData = (user, next) => {
         // Generate random allocations
@@ -199,8 +205,8 @@ function SessionHandler(db) {
 
         // set these up in case we have an error case
         const errors = {
-            "userName": userName,
-            "email": email
+            "userName": escapeHtml(userName),
+            "email": escapeHtml(email)
         };
 
         if (validateSignup(userName, firstName, lastName, password, verify, email, errors)) {
