@@ -9,6 +9,19 @@ function ProfileHandler(db) {
     "use strict";
 
     const profile = new ProfileDAO(db);
+    const encodeForHTML = (value) => ESAPI.encoder().encodeForHTML(String(value || ""));
+    const encodeProfileViewModel = (profileDoc) => ({
+        ...profileDoc,
+        firstName: encodeForHTML(profileDoc.firstName),
+        firstNameSafeString: encodeForHTML(profileDoc.firstName),
+        lastName: encodeForHTML(profileDoc.lastName),
+        ssn: encodeForHTML(profileDoc.ssn),
+        dob: encodeForHTML(profileDoc.dob),
+        address: encodeForHTML(profileDoc.address),
+        bankAcc: encodeForHTML(profileDoc.bankAcc),
+        bankRouting: encodeForHTML(profileDoc.bankRouting),
+        website: encodeForHTML(profileDoc.website)
+    });
 
     this.displayProfile = (req, res, next) => {
         const {
@@ -21,17 +34,8 @@ function ProfileHandler(db) {
             if (err) return next(err);
             doc.userId = userId;
 
-            // @TODO @FIXME
-            // while the developer intentions were correct in encoding the user supplied input so it
-            // doesn't end up as an XSS attack, the context is incorrect as it is encoding the firstname for HTML
-            // while this same variable is also used in the context of a URL link element
-            doc.website = ESAPI.encoder().encodeForHTML(doc.website);
-            // fix it by replacing the above with another template variable that is used for 
-            // the context of a URL in a link header
-            // doc.website = ESAPI.encoder().encodeForURL(doc.website)
-
             return res.render("profile", {
-                ...doc,
+                ...encodeProfileViewModel(doc),
                 environmentalScripts
             });
         });
@@ -61,16 +65,17 @@ function ProfileHandler(db) {
         const testComplyWithRequirements = regexPattern.test(bankRouting);
         // if the regex test fails we do not allow saving
         if (testComplyWithRequirements !== true) {
-            const firstNameSafeString = firstName;
             return res.render("profile", {
+                ...encodeProfileViewModel({
+                    firstName,
+                    lastName,
+                    ssn,
+                    dob,
+                    address,
+                    bankAcc,
+                    bankRouting
+                }),
                 updateError: "Bank Routing number does not comply with requirements for format specified",
-                firstNameSafeString,
-                lastName,
-                ssn,
-                dob,
-                address,
-                bankAcc,
-                bankRouting,
                 environmentalScripts
             });
         }
@@ -98,7 +103,7 @@ function ProfileHandler(db) {
                 user.userId = userId;
 
                 return res.render("profile", {
-                    ...user,
+                    ...encodeProfileViewModel(user),
                     environmentalScripts
                 });
             }
