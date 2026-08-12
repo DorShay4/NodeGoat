@@ -4,6 +4,9 @@ const {
     environmentalScripts
 } = require("../../config/config");
 
+const YAHOO_FINANCE_QUOTE_URL = "https://finance.yahoo.com/q?s=";
+const STOCK_SYMBOL_PATTERN = /^[A-Za-z0-9.-]{1,10}$/;
+
 function ResearchHandler(db) {
     "use strict";
 
@@ -12,7 +15,13 @@ function ResearchHandler(db) {
     this.displayResearch = (req, res) => {
 
         if (req.query.symbol) {
-            const url = req.query.url + req.query.symbol;
+            const symbol = String(req.query.symbol).trim();
+
+            if (!STOCK_SYMBOL_PATTERN.test(symbol)) {
+                return res.status(400).send("Invalid symbol");
+            }
+
+            const url = YAHOO_FINANCE_QUOTE_URL + encodeURIComponent(symbol);
             return needle.get(url, (error, newResponse, body) => {
                 if (!error && newResponse.statusCode === 200) {
                     res.writeHead(200, {
