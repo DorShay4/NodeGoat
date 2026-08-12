@@ -6,6 +6,7 @@ const {
 function MemosHandler(db) {
     "use strict";
 
+    const MAX_MEMO_LENGTH = 4096;
     const memosDAO = new MemosDAO(db);
     const getExpectedOrigin = (req) => `${req.protocol}://${req.get("host")}`;
 
@@ -33,7 +34,15 @@ function MemosHandler(db) {
             return next(err);
         }
 
-        memosDAO.insert(req.body.memo, (err, docs) => {
+        const memo = typeof req.body.memo === "string" ? req.body.memo : "";
+
+        if (memo.length > MAX_MEMO_LENGTH) {
+            const err = new Error("Memo exceeds maximum length");
+            err.status = 400;
+            return next(err);
+        }
+
+        memosDAO.insert(memo, (err, docs) => {
             if (err) return next(err);
             this.displayMemos(req, res, next);
         });
