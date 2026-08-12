@@ -114,9 +114,20 @@ function UserDAO(db) {
                     seq: 1
                 }
             }, {
-                new: true
+                new: true,
+                upsert: true
             },
-            (err, data) =>  err ? callback(err, null) : callback(null, data.value.seq));
+            (err, data) => {
+                if (err) {
+                    return callback(err, null);
+                }
+
+                if (!data || !data.value || typeof data.value.seq !== "number") {
+                    return callback(new Error("Counter sequence unavailable"), null);
+                }
+
+                return callback(null, data.value.seq);
+            });
     };
 }
 
